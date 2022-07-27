@@ -104,4 +104,14 @@ contract ContractTest is BaseSetup {
 
         assert(claimed_1 == claimed_2);
     }
+
+    function testRevertOnNonBeneficiaryFuzz(uint256 amount, address claimer) public {
+        if (claimer == bob || claimer == alice) return;
+        vm.warp(cliff);
+        contribute(amount);
+        vm.startPrank(claimer);
+
+        vm.expectRevert("Not a beneficiary");
+        escrow.claim();
+    }
 }
