@@ -10,3 +10,6 @@
 [submodule "solidity-scripting/lib/ds-test"]
 	path = solidity-scripting/lib/ds-test
 	url = https://github.com/dapphub/ds-test
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/transmissions11/solmate
