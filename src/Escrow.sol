@@ -2,8 +2,10 @@ pragma solidity ^0.8.1;
 
 import { MultiSigWallet } from "./Multisig.sol";
 import {IERC20} from "openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Escrow is MultiSigWallet {
+    using SafeERC20 for IERC20;
     uint cliff; // represents a cliff for a user to claim available tokens
     
     address beneficiary_1;
@@ -23,14 +25,15 @@ contract Escrow is MultiSigWallet {
     }
 
     modifier pastCliff() {
-        require(block.timestamp >= cliff);
+        require(block.timestamp >= cliff, "cliff");
         _;
     }
 
-    constructor (address[] memory _owners, uint _required, address _ben1, address _ben2, uint _cliff) MultiSigWallet(_owners, _required) {
+    constructor (address[] memory _owners, uint _required, address _ben1, address _ben2, uint _cliff, address _escrowToken) MultiSigWallet(_owners, _required) {
         beneficiary_1 = _ben1;
         beneficiary_2 = _ben2;
         cliff = _cliff;
+        escrowToken = _escrowToken;
     }
 
     function getClaimableAmount(address claimer) public view returns (uint _claimed) {
@@ -45,8 +48,9 @@ contract Escrow is MultiSigWallet {
             _claimed = _claimed / 2; 
         } else {
             // beneficiaries are at equal claim, or the other benny has claimed more.  Account for the difference
-            _claimed = totalAvailable / 2;
-            _claimed = _claimed + (claimedByOther - alreadyClaimed);
+            _claimed = totalAvailable - (claimedByOther - alreadyClaimed);
+            _claimed = _claimed / 2;
+            _claimed += claimedByOther - alreadyClaimed;
         }
     }
 
@@ -55,7 +59,8 @@ contract Escrow is MultiSigWallet {
 
         if (msg.sender == beneficiary_1) claimed_1 = claimed_1 + amount;
         else if (msg.sender == beneficiary_2) claimed_2 = claimed_2 + amount;
-        require(IERC20(escrowToken).transfer(msg.sender, amount), "Transfer failed!");
+
+        IERC20(escrowToken).safeTransfer(msg.sender, amount);
 
         emit Claim(msg.sender, block.timestamp, amount);
     }
