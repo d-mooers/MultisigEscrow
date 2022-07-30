@@ -6,18 +6,19 @@ import {SafeERC20} from "openzeppelin-contracts/contracts/token/ERC20/utils/Safe
 
 contract Escrow is MultiSigWallet {
     using SafeERC20 for IERC20;
-    uint cliff; // represents a cliff for a user to claim available tokens
+    uint public cliff; // represents a cliff for a user to claim available tokens
     
-    address beneficiary_1;
-    address beneficiary_2;
+    address public beneficiary_1;
+    address public beneficiary_2;
 
     uint claimed_1;
     uint claimed_2;
 
-    address escrowToken;
+    address public escrowToken;
 
     event Claim(address indexed beneficiary, uint indexed timestamp, uint indexed amount);
     event BeneficiaryUpdated(address indexed old, address indexed updated);
+    event EscrowTokenUpdated(address oldToken, address newToken);
 
     modifier onlyBeneficiary() {
         require(msg.sender == beneficiary_1 || msg.sender == beneficiary_2, "Not a beneficiary");
@@ -65,11 +66,18 @@ contract Escrow is MultiSigWallet {
         emit Claim(msg.sender, block.timestamp, amount);
     }
 
-    function updateBeneficiary(address _old, address _new) onlyWallet external {
+    function updateBeneficiary(address _old, address _new) onlyWallet public {
         if (_old == beneficiary_1) beneficiary_1 = _new;
         else if (_old == beneficiary_2) beneficiary_2 = _new;
 
         emit BeneficiaryUpdated(_old, _new);
+    }
+
+    function updateEscrowToken(address _new) onlyWallet public {
+        address old = escrowToken;
+        escrowToken = _new;
+
+        emit EscrowTokenUpdated(old, _new);
     }
 
 }
